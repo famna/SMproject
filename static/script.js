@@ -6,7 +6,7 @@
 const loadBtn = document.getElementById('loadBtn');
 const searchInput = document.getElementById('searchInput');
 const sortSelect = document.getElementById('sortSelect');
-const filterAwards = document.getElementById('filterAwards');
+// const filterAwards видалено
 const cardsContainer = document.getElementById('cardsContainer');
 const loadingDiv = document.getElementById('loading');
 const errorDiv = document.getElementById('error');
@@ -46,7 +46,7 @@ async function loadData() {
 }
 
 /**
- * Пошук та фільтрація виконавців
+ * Пошук виконавців
  */
 async function searchAndFilter() {
     try {
@@ -55,8 +55,8 @@ async function searchAndFilter() {
 
         const params = new URLSearchParams({
             q: searchInput.value,
-            sort: sortSelect.value,
-            filter: filterAwards.value
+            sort: sortSelect.value
+            // filter видалено
         });
 
         const response = await fetch(`/api/artists/search?${params}`);
@@ -88,7 +88,7 @@ function renderCards(artists) {
             <div class="no-data">
                 <div class="no-data-icon">🎤</div>
                 <h2>Немає результатів</h2>
-                <p>Спробуйте змінити параметри пошуку або фільтрації</p>
+                <p>Спробуйте змінити параметри пошуку</p>
             </div>
         `;
         return;
@@ -164,15 +164,12 @@ function getNagrodWord(count) {
     if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
         return 'нагород';
     }
-
     if (lastDigit === 1) {
         return 'нагорода';
     }
-
     if (lastDigit >= 2 && lastDigit <= 4) {
         return 'нагороди';
     }
-
     return 'нагород';
 }
 
@@ -180,8 +177,9 @@ function getNagrodWord(count) {
  * Оновлення статистики
  */
 function updateStats(stats) {
-    document.getElementById('totalCount').textContent = stats.total;
-    document.getElementById('withAwardsCount').textContent = stats.with_awards;
+    // Оновлена логіка відображення
+    document.getElementById('totalAwardsDisplay').textContent = stats.total_awards;
+    document.getElementById('totalArtistsDisplay').textContent = stats.total_artists;
     document.getElementById('avgAwards').textContent = stats.avg_awards;
 }
 
@@ -197,7 +195,7 @@ function showError(message) {
 }
 
 /**
- * Екранування HTML для безпеки
+ * Екранування HTML
  */
 function escapeHtml(text) {
     const div = document.createElement('div');
@@ -206,7 +204,7 @@ function escapeHtml(text) {
 }
 
 /**
- * Debounce функція для оптимізації пошуку
+ * Debounce
  */
 function debounce(func, delay) {
     return function() {
@@ -223,9 +221,9 @@ searchInput.addEventListener('input', debounce(() => {
 }, 500));
 
 sortSelect.addEventListener('change', searchAndFilter);
-filterAwards.addEventListener('change', searchAndFilter);
+// filterAwards listener видалено
 
-// Автоматичне завантаження при завантаженні сторінки
+// Автоматичне завантаження
 window.addEventListener('load', () => {
     loadData();
 });

@@ -35,25 +35,10 @@ class WikidataService:
     """Сервіс для роботи з Wikidata"""
     
     def __init__(self, endpoint_url):
-        """
-        Ініціалізація сервісу
-        
-        Args:
-            endpoint_url (str): URL SPARQL endpoint
-        """
         self.sparql = SPARQLWrapper(endpoint_url)
         self.sparql.setReturnFormat(JSON)
     
     def execute_query(self, query):
-        """
-        Виконання SPARQL запиту
-        
-        Args:
-            query (str): SPARQL запит
-            
-        Returns:
-            dict: Результати запиту
-        """
         self.sparql.setQuery(query)
         try:
             results = self.sparql.query().convert()
@@ -67,17 +52,7 @@ class ArtistDataParser:
     
     @staticmethod
     def parse_results(results):
-        """
-        Парсинг результатів SPARQL запиту
-        
-        Args:
-            results (dict): Результати запиту
-            
-        Returns:
-            list: Список виконавців
-        """
         artists = []
-        
         for binding in results["results"]["bindings"]:
             artist = {
                 "id": binding.get("artist", {}).get("value", ""),
@@ -87,23 +62,12 @@ class ArtistDataParser:
                 "awards_count": int(binding.get("awardsCount", {}).get("value", 0))
             }
             artists.append(artist)
-        
         return artists
     
     @staticmethod
     def format_birth_date(date_string):
-        """
-        Форматування дати народження
-        
-        Args:
-            date_string (str): Дата у форматі ISO
-            
-        Returns:
-            str: Форматована дата
-        """
         if not date_string:
             return None
-        
         try:
             date = datetime.fromisoformat(date_string.replace('Z', '+00:00'))
             months = [
@@ -120,23 +84,15 @@ class StatisticsCalculator:
     
     @staticmethod
     def calculate_stats(artists):
-        """
-        Розрахунок статистики
-        
-        Args:
-            artists (list): Список виконавців
-            
-        Returns:
-            dict: Статистичні дані
-        """
         total = len(artists)
-        with_awards = len([a for a in artists if a["awards_count"] > 0])
+        # Рахуємо загальну кількість нагород
         total_awards = sum(a["awards_count"] for a in artists)
-        avg_awards = round(total_awards / with_awards, 1) if with_awards > 0 else 0
+        # Середнє рахуємо по загальній кількості виконавців (так точніше для загальної картини)
+        avg_awards = round(total_awards / total, 1) if total > 0 else 0
         
         return {
-            "total": total,
-            "with_awards": with_awards,
+            "total_artists": total,     # Всього виконавців
+            "total_awards": total_awards, # Всього нагород (Нове поле)
             "avg_awards": avg_awards
         }
 
@@ -148,30 +104,18 @@ parser = ArtistDataParser()
 
 @app.route('/')
 def index():
-    """Головна сторінка"""
     return render_template('index.html')
 
 
 @app.route('/api/artists', methods=['GET'])
 def get_artists():
-    """
-    API endpoint для отримання даних про виконавців
-    
-    Returns:
-        JSON: Дані про виконавців та статистика
-    """
     try:
-        # Виконання запиту до Wikidata
         results = wikidata_service.execute_query(SPARQL_QUERY)
-        
-        # Парсинг результатів
         artists = parser.parse_results(results)
         
-        # Форматування дат
         for artist in artists:
             artist["birth_date_formatted"] = parser.format_birth_date(artist["birth_date"])
         
-        # Розрахунок статистики
         stats = StatisticsCalculator.calculate_stats(artists)
         
         return jsonify({
@@ -179,50 +123,26 @@ def get_artists():
             "data": artists,
             "stats": stats
         })
-    
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route('/api/artists/search', methods=['GET'])
 def search_artists():
-    """
-    API endpoint для пошуку виконавців
-    
-    Query params:
-        q (str): Пошуковий запит
-        sort (str): Тип сортування (awards, name, birth_date)
-        filter (str): Фільтр (all, with_awards, no_awards)
-    
-    Returns:
-        JSON: Відфільтровані дані
-    """
     try:
-        # Отримання параметрів
         search_query = request.args.get('q', '').lower()
         sort_by = request.args.get('sort', 'awards')
-        filter_by = request.args.get('filter', 'all')
+        # Параметр filter більше не використовується
         
-        # Виконання запиту
         results = wikidata_service.execute_query(SPARQL_QUERY)
         artists = parser.parse_results(results)
         
-        # Форматування дат
         for artist in artists:
             artist["birth_date_formatted"] = parser.format_birth_date(artist["birth_date"])
         
         # Пошук
         if search_query:
             artists = [a for a in artists if search_query in a["name"].lower()]
-        
-        # Фільтрація
-        if filter_by == "with_awards":
-            artists = [a for a in artists if a["awards_count"] > 0]
-        elif filter_by == "no_awards":
-            artists = [a for a in artists if a["awards_count"] == 0]
         
         # Сортування
         if sort_by == "name":
@@ -232,7 +152,6 @@ def search_artists():
         else:  # awards
             artists.sort(key=lambda x: x["awards_count"], reverse=True)
         
-        # Статистика
         stats = StatisticsCalculator.calculate_stats(artists)
         
         return jsonify({
@@ -240,12 +159,8 @@ def search_artists():
             "data": artists,
             "stats": stats
         })
-    
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 if __name__ == '__main__':

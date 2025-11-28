@@ -26,23 +26,16 @@
                     <option value="name">За ім'ям (А-Я)</option>
                     <option value="birth_date">За датою народження</option>
                 </select>
-
-                <label>Показувати:</label>
-                <select id="filterAwards">
-                    <option value="all">Усі виконавці</option>
-                    <option value="with_awards">Тільки з нагородами</option>
-                    <option value="no_awards">Без нагород</option>
-                </select>
-            </div>
+                </div>
 
             <div class="stats" id="stats" style="display: none;">
                 <div class="stat-item">
-                    <div class="stat-number" id="totalCount">0</div>
-                    <div class="stat-label">Всього виконавців</div>
+                    <div class="stat-number" id="totalAwardsDisplay">0</div> 
+                    <div class="stat-label">Загальна кількість нагород</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-number" id="withAwardsCount">0</div>
-                    <div class="stat-label">З нагородами</div>
+                    <div class="stat-number" id="totalArtistsDisplay">0</div>
+                    <div class="stat-label">Всього виконавців</div>
                 </div>
                 <div class="stat-item">
                     <div class="stat-number" id="avgAwards">0</div>
