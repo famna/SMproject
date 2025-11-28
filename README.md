@@ -25,14 +25,15 @@
 * **Libraries:** `SPARQLWrapper` (для запитів), `Werkzeug`
 * **Frontend:** HTML5, CSS3, JavaScript (Vanilla JS, Fetch API)
 
-Структура проекту
+# Структура проекту
+
 ukrainian-music-app/
 ├── app.py                 # Головний Flask застосунок з API
 ├── requirements.txt       # Залежності
-├── README.md             # Повна документація
-├── .gitignore           # Git ignore файл
+├── README.md              # Повна документація
+├── .gitignore             # Git ignore файл
 ├── static/
-│   ├── style.css        # Стилі
-│   └── script.js        # JavaScript
+│   ├── style.css          # Стилі
+│   └── script.js          # JavaScript
 └── templates/
-    └── index.html       # HTML шаблон
+    └── index.html         # HTML шаблон
