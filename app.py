@@ -6,36 +6,30 @@ import re
 
 app = Flask(__name__)
 
-# Конфігурація SPARQL endpoint
 SPARQL_ENDPOINT = "https://query.wikidata.org/sparql"
 
-# SPARQL запит для отримання даних про українських виконавців
-# Зміни: додано fallback мову "en" у SERVICE wikibase:label
 SPARQL_QUERY = """
 SELECT ?artist ?artistLabel ?birthDate ?birthPlaceLabel (COUNT(?award) AS ?awardsCount)
 WHERE {
-  ?artist wdt:P31 wd:Q5.                         # людина
-  ?artist wdt:P106 wd:Q177220.                   # музичний виконавець
-  ?artist wdt:P27 wd:Q212.                       # громадянство Україна (Q212)
+  ?artist wdt:P31 wd:Q5.
+  ?artist wdt:P106 wd:Q177220.
+  ?artist wdt:P27 wd:Q212.
 
   OPTIONAL { ?artist wdt:P569 ?birthDate. }
   OPTIONAL { ?artist wdt:P19 ?birthPlace. 
              ?birthPlace rdfs:label ?birthPlaceLabel.
              FILTER(LANG(?birthPlaceLabel)="uk")
            }
-  OPTIONAL { ?artist wdt:P166 ?award. }          # нагороди
+  OPTIONAL { ?artist wdt:P166 ?award. }
 
   SERVICE wikibase:label { bd:serviceParam wikibase:language "uk,en". }
 }
 GROUP BY ?artist ?artistLabel ?birthDate ?birthPlaceLabel
 ORDER BY DESC(?awardsCount)
-LIMIT 200
+LIMIT 1000
 """
 
-
 class WikidataService:
-    """Сервіс для роботи з Wikidata"""
-    
     def __init__(self, endpoint_url):
         self.sparql = SPARQLWrapper(endpoint_url)
         self.sparql.setReturnFormat(JSON)
@@ -48,21 +42,16 @@ class WikidataService:
         except Exception as e:
             raise Exception(f"Помилка виконання запиту: {str(e)}")
 
-
 class ArtistDataParser:
-    """Парсер даних про виконавців"""
-    
     @staticmethod
     def parse_results(results):
         artists = []
-        
         for binding in results["results"]["bindings"]:
             raw_id = binding.get("artist", {}).get("value", "")
-            q_id = raw_id.split("/")[-1] # Отримуємо сам код, наприклад Q4277799
+            q_id = raw_id.split("/")[-1]
             
             name = binding.get("artistLabel", {}).get("value", "Невідомо")
             
-            # ФІЛЬТРАЦІЯ: Якщо ім'я співпадає з Q-кодом, пропускаємо цього виконавця
             if name == q_id:
                 continue
 
@@ -74,7 +63,6 @@ class ArtistDataParser:
                 "awards_count": int(binding.get("awardsCount", {}).get("value", 0))
             }
             artists.append(artist)
-        
         return artists
     
     @staticmethod
@@ -91,10 +79,7 @@ class ArtistDataParser:
         except:
             return date_string
 
-
 class StatisticsCalculator:
-    """Калькулятор статистики"""
-    
     @staticmethod
     def calculate_stats(artists):
         total = len(artists)
@@ -107,42 +92,38 @@ class StatisticsCalculator:
             "avg_awards": avg_awards
         }
 
-
-# Ініціалізація сервісів
 wikidata_service = WikidataService(SPARQL_ENDPOINT)
 parser = ArtistDataParser()
-
 
 @app.route('/')
 def index():
     return render_template('index.html')
-
 
 @app.route('/api/artists', methods=['GET'])
 def get_artists():
     try:
         results = wikidata_service.execute_query(SPARQL_QUERY)
         artists = parser.parse_results(results)
-        
         for artist in artists:
             artist["birth_date_formatted"] = parser.format_birth_date(artist["birth_date"])
-        
         stats = StatisticsCalculator.calculate_stats(artists)
-        
-        return jsonify({
-            "success": True,
-            "data": artists,
-            "stats": stats
-        })
+        return jsonify({"success": True, "data": artists, "stats": stats})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
-
 
 @app.route('/api/artists/search', methods=['GET'])
 def search_artists():
     try:
+        # Отримання всіх параметрів
         search_query = request.args.get('q', '').lower()
         sort_by = request.args.get('sort', 'awards')
+        filter_by = request.args.get('filter', 'all')
+        
+        # Отримання параметрів для кастомного діапазону
+        min_awards = int(request.args.get('min', 0))
+        # Якщо max не вказано або порожнє, ставимо дуже велике число
+        max_val_str = request.args.get('max', '')
+        max_awards = int(max_val_str) if max_val_str else 999999
         
         results = wikidata_service.execute_query(SPARQL_QUERY)
         artists = parser.parse_results(results)
@@ -150,13 +131,24 @@ def search_artists():
         for artist in artists:
             artist["birth_date_formatted"] = parser.format_birth_date(artist["birth_date"])
         
-        # Пошук
+        # 1. Пошук по імені
         if search_query:
             artists = [a for a in artists if search_query in a["name"].lower()]
         
-        # Сортування
+        # 2. Фільтрація
+        if filter_by == "with_awards":
+            artists = [a for a in artists if a["awards_count"] > 0]
+        elif filter_by == "no_awards":
+            artists = [a for a in artists if a["awards_count"] == 0]
+        elif filter_by == "custom":
+            # Нова логіка діапазону
+            artists = [
+                a for a in artists 
+                if min_awards <= a["awards_count"] <= max_awards
+            ]
+        
+        # 3. Сортування
         if sort_by == "name":
-            # ВИПРАВЛЕННЯ: Сортування з приведенням до нижнього регістру для коректного алфавіту
             artists.sort(key=lambda x: x["name"].lower())
         elif sort_by == "birth_date":
             artists.sort(key=lambda x: x["birth_date"] or "", reverse=True)
@@ -172,7 +164,6 @@ def search_artists():
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
-
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

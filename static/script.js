@@ -6,7 +6,12 @@
 const loadBtn = document.getElementById('loadBtn');
 const searchInput = document.getElementById('searchInput');
 const sortSelect = document.getElementById('sortSelect');
-// const filterAwards видалено
+const filterAwards = document.getElementById('filterAwards');
+// Нові елементи
+const rangeInputs = document.getElementById('rangeInputs');
+const minAwardsInput = document.getElementById('minAwards');
+const maxAwardsInput = document.getElementById('maxAwards');
+
 const cardsContainer = document.getElementById('cardsContainer');
 const loadingDiv = document.getElementById('loading');
 const errorDiv = document.getElementById('error');
@@ -15,9 +20,6 @@ const statsDiv = document.getElementById('stats');
 // Глобальні змінні
 let debounceTimer;
 
-/**
- * Завантаження даних про виконавців
- */
 async function loadData() {
     try {
         loadBtn.disabled = true;
@@ -45,18 +47,18 @@ async function loadData() {
     }
 }
 
-/**
- * Пошук виконавців
- */
 async function searchAndFilter() {
     try {
         loadingDiv.style.display = 'block';
         errorDiv.style.display = 'none';
 
+        // Додаємо min/max у параметри запиту
         const params = new URLSearchParams({
             q: searchInput.value,
-            sort: sortSelect.value
-            // filter видалено
+            sort: sortSelect.value,
+            filter: filterAwards.value,
+            min: minAwardsInput.value || 0,
+            max: maxAwardsInput.value || ''
         });
 
         const response = await fetch(`/api/artists/search?${params}`);
@@ -77,9 +79,6 @@ async function searchAndFilter() {
     }
 }
 
-/**
- * Відображення карток виконавців
- */
 function renderCards(artists) {
     cardsContainer.innerHTML = '';
 
@@ -88,7 +87,7 @@ function renderCards(artists) {
             <div class="no-data">
                 <div class="no-data-icon">🎤</div>
                 <h2>Немає результатів</h2>
-                <p>Спробуйте змінити параметри пошуку</p>
+                <p>Спробуйте змінити параметри пошуку або фільтрації</p>
             </div>
         `;
         return;
@@ -100,9 +99,6 @@ function renderCards(artists) {
     });
 }
 
-/**
- * Створення HTML картки виконавця
- */
 function createCard(artist) {
     const card = document.createElement('div');
     card.className = 'card';
@@ -154,9 +150,6 @@ function createCard(artist) {
     return card;
 }
 
-/**
- * Правильне відмінювання слова "нагорода"
- */
 function getNagrodWord(count) {
     const lastDigit = count % 10;
     const lastTwoDigits = count % 100;
@@ -173,19 +166,12 @@ function getNagrodWord(count) {
     return 'нагород';
 }
 
-/**
- * Оновлення статистики
- */
 function updateStats(stats) {
-    // Оновлена логіка відображення
     document.getElementById('totalAwardsDisplay').textContent = stats.total_awards;
     document.getElementById('totalArtistsDisplay').textContent = stats.total_artists;
     document.getElementById('avgAwards').textContent = stats.avg_awards;
 }
 
-/**
- * Відображення повідомлення про помилку
- */
 function showError(message) {
     errorDiv.innerHTML = `
         <strong>❌ Помилка!</strong><br>
@@ -194,18 +180,12 @@ function showError(message) {
     errorDiv.style.display = 'block';
 }
 
-/**
- * Екранування HTML
- */
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
-/**
- * Debounce
- */
 function debounce(func, delay) {
     return function() {
         clearTimeout(debounceTimer);
@@ -221,7 +201,29 @@ searchInput.addEventListener('input', debounce(() => {
 }, 500));
 
 sortSelect.addEventListener('change', searchAndFilter);
-// filterAwards listener видалено
+
+// Логіка для перемикання фільтра
+filterAwards.addEventListener('change', () => {
+    // Якщо вибрано "custom", показуємо поля вводу, інакше ховаємо
+    if (filterAwards.value === 'custom') {
+        rangeInputs.style.display = 'flex';
+    } else {
+        rangeInputs.style.display = 'none';
+        // Очищуємо поля, щоб вони не впливали на майбутні пошуки
+        minAwardsInput.value = '';
+        maxAwardsInput.value = '';
+    }
+    searchAndFilter();
+});
+
+// Додаємо слухачі на нові інпути (з debounce)
+minAwardsInput.addEventListener('input', debounce(() => {
+    searchAndFilter();
+}, 500));
+
+maxAwardsInput.addEventListener('input', debounce(() => {
+    searchAndFilter();
+}, 500));
 
 // Автоматичне завантаження
 window.addEventListener('load', () => {

@@ -26,7 +26,21 @@
                     <option value="name">За ім'ям (А-Я)</option>
                     <option value="birth_date">За датою народження</option>
                 </select>
+
+                <label>Показувати:</label>
+                <select id="filterAwards">
+                    <option value="all">Усі виконавці</option>
+                    <option value="with_awards">Тільки з нагородами</option>
+                    <option value="no_awards">Без нагород</option>
+                    <option value="custom">З Х нагород (діапазон)</option>
+                </select>
+
+                <div id="rangeInputs" class="range-inputs" style="display: none;">
+                    <input type="number" id="minAwards" placeholder="Від" min="0" class="small-input">
+                    <span>—</span>
+                    <input type="number" id="maxAwards" placeholder="До" min="0" class="small-input">
                 </div>
+            </div>
 
             <div class="stats" id="stats" style="display: none;">
                 <div class="stat-item">

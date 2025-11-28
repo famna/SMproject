@@ -292,3 +292,40 @@ h1 {
         gap: 10px;
     }
 }
+.range-inputs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.small-input {
+    width: 80px;
+    padding: 8px 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 15px;
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.small-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* Адаптивність для нових полів */
+@media (max-width: 768px) {
+    .range-inputs {
+        width: 100%;
+        margin-top: 10px;
+    }
+    
+    .small-input {
+        flex: 1;
+    }
+}
