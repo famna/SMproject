@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сучасний музичний світ України</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Сучасний музичний світ України</h1>
+            <p class="subtitle">Українські музичні виконавці з Wikidata</p>
+        </header>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Пошук за ім'ям виконавця...">
+                <button class="btn" id="loadBtn">Завантажити дані</button>
+            </div>
+
+            <div class="filter-group">
+                <label>Сортування:</label>
+                <select id="sortSelect">
+                    <option value="awards">За кількістю нагород</option>
+                    <option value="name">За ім'ям (А-Я)</option>
+                    <option value="birth_date">За датою народження</option>
+                </select>
+
+                <label>Показувати:</label>
+                <select id="filterAwards">
+                    <option value="all">Усі виконавці</option>
+                    <option value="with_awards">Тільки з нагородами</option>
+                    <option value="no_awards">Без нагород</option>
+                </select>
+            </div>
+
+            <div class="stats" id="stats" style="display: none;">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalCount">0</div>
+                    <div class="stat-label">Всього виконавців</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="withAwardsCount">0</div>
+                    <div class="stat-label">З нагородами</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="avgAwards">0</div>
+                    <div class="stat-label">Середньо нагород</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Завантаження даних з Wikidata...</p>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="cardsContainer" class="cards-grid"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
