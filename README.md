@@ -27,7 +27,8 @@
 
 # Структура проекту
 
-ukrainian-music-app/
+```text
+ProjectSM/
 ├── app.py                 # Головний Flask застосунок з API
 ├── requirements.txt       # Залежності
 ├── README.md              # Повна документація
@@ -37,3 +38,4 @@ ukrainian-music-app/
 │   └── script.js          # JavaScript
 └── templates/
     └── index.html         # HTML шаблон
+```
