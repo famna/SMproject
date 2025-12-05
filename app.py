@@ -9,26 +9,26 @@ app = Flask(__name__)
 SPARQL_ENDPOINT = "https://query.wikidata.org/sparql"
 
 SPARQL_QUERY = """
-SELECT ?artist ?artistLabel ?birthDate ?birthPlaceLabel (COUNT(?award) AS ?awardsCount)
+SELECT ?artist ?artistLabel ?birthDate ?birthPlaceLabel (COUNT(?award) AS ?awardsCount) 
 WHERE {
   ?artist wdt:P31 wd:Q5.
   ?artist wdt:P106 wd:Q177220.
-  ?artist wdt:P27 wd:Q212.
+  ?artist wdt:P27 wd:Q212. 
 
-  OPTIONAL { ?artist wdt:P569 ?birthDate. }
-  OPTIONAL { ?artist wdt:P19 ?birthPlace. 
-             ?birthPlace rdfs:label ?birthPlaceLabel.
-             FILTER(LANG(?birthPlaceLabel)="uk")
+  OPTIONAL { ?artist wdt:P569 ?birthDate. } # Дата народження
+  OPTIONAL { ?artist wdt:P19 ?birthPlace.  # Місце народження
+             ?birthPlace rdfs:label ?birthPlaceLabel. # Мітка місця народження
+             FILTER(LANG(?birthPlaceLabel)="uk") # Фільтр за українською мовою
            }
-  OPTIONAL { ?artist wdt:P166 ?award. }
+  OPTIONAL { ?artist wdt:P166 ?award. } # Нагороди
 
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "uk,en". }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "uk,en". } # Отримання міток українською або англійською
 }
-GROUP BY ?artist ?artistLabel ?birthDate ?birthPlaceLabel
-ORDER BY DESC(?awardsCount)
+GROUP BY ?artist ?artistLabel ?birthDate ?birthPlaceLabel # Групування за артистом, міткою, датою народження та місцем народження
+ORDER BY DESC(?awardsCount) # Сортування за кількістю нагороджень
 LIMIT 1000
 """
-
+ # Функція для дебаунсу введення користувача
 class WikidataService:
     def __init__(self, endpoint_url):
         self.sparql = SPARQLWrapper(endpoint_url)
@@ -41,7 +41,7 @@ class WikidataService:
             return results
         except Exception as e:
             raise Exception(f"Помилка виконання запиту: {str(e)}")
-
+# Функція для дебаунсу введення користувача
 class ArtistDataParser:
     @staticmethod
     def parse_results(results):
@@ -64,7 +64,7 @@ class ArtistDataParser:
             }
             artists.append(artist)
         return artists
-    
+    # Функція для форматування дати народження
     @staticmethod
     def format_birth_date(date_string):
         if not date_string:
@@ -78,7 +78,7 @@ class ArtistDataParser:
             return f"{date.day} {months[date.month - 1]} {date.year}"
         except:
             return date_string
-
+#   Клас для обчислення статистики
 class StatisticsCalculator:
     @staticmethod
     def calculate_stats(artists):
@@ -91,26 +91,26 @@ class StatisticsCalculator:
             "total_awards": total_awards,
             "avg_awards": avg_awards
         }
-
+# Ініціалізація сервісів
 wikidata_service = WikidataService(SPARQL_ENDPOINT)
 parser = ArtistDataParser()
-
+# Ініціалізація Flask додатку
 @app.route('/')
 def index():
     return render_template('index.html')
-
+#   Маршрут для отримання даних про виконавців
 @app.route('/api/artists', methods=['GET'])
 def get_artists():
     try:
-        results = wikidata_service.execute_query(SPARQL_QUERY)
+        results = wikidata_service.execute_query(SPARQL_QUERY) 
         artists = parser.parse_results(results)
         for artist in artists:
-            artist["birth_date_formatted"] = parser.format_birth_date(artist["birth_date"])
-        stats = StatisticsCalculator.calculate_stats(artists)
-        return jsonify({"success": True, "data": artists, "stats": stats})
+            artist["birth_date_formatted"] = parser.format_birth_date(artist["birth_date"]) 
+        stats = StatisticsCalculator.calculate_stats(artists) 
+        return jsonify({"success": True, "data": artists, "stats": stats}) 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
-
+# Маршрут для пошуку та фільтрації виконавців
 @app.route('/api/artists/search', methods=['GET'])
 def search_artists():
     try:
@@ -154,8 +154,8 @@ def search_artists():
             artists.sort(key=lambda x: x["birth_date"] or "", reverse=True)
         else:  # awards
             artists.sort(key=lambda x: x["awards_count"], reverse=True)
-        
-        stats = StatisticsCalculator.calculate_stats(artists)
+        # 4. Форматування дати народження
+        stats = StatisticsCalculator.calculate_stats(artists) 
         
         return jsonify({
             "success": True,
